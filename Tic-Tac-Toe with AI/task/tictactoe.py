@@ -10,17 +10,50 @@ class TicTacToe:
         self.field = empty((rows, columns), dtype=str, order='F')
         self.rows = rows
         self.columns = columns
-        self.player = None
+        self.turn = None
+        self.player_1 = None
+        self.player_2 = None
+
+    def menu(self):
+        CHOICES = ('easy', 'medium', 'hard', 'user')
+        while True:
+            command = input('Input command: ').split()
+            if command[0] == 'exit':
+                quit()
+            elif len(command) == 3 and command[0] == 'start' \
+                    and all([i in CHOICES for i in command[1:2]]):
+                self.player_1, self.player_2 = command[1], command[2]
+
+                print(f'{self.player_1=}, {self.player_2=}')
+                break
+            else:
+                print('Bad parameters!')
 
     def easy_ai(self):
         print('Making move level "easy"')
-        self.player = self.current_player()
+        self.turn = self.current_player()
         possible_moves = tuple(zip(*where(self.field == ' ')))
-        self.field[random.choice(possible_moves)] = self.player
-        self.print_field()
+        self.field[random.choice(possible_moves)] = self.turn
+
+    def medium_ai(self):
+        pass
+
+    def hard_ai(self):
+        pass
 
     def current_player(self):
         return 'X' if (self.field == 'O').sum() >= (self.field == 'X').sum() else 'O'
+
+    # REPLACE TO ONLY EVALUATE THIS ONCE
+    def play(self, player):
+        if player == 'user':
+            self.player_move()
+        elif player == 'easy':
+            self.easy_ai()
+        elif player == 'medium':
+            self.medium_ai()
+        elif player == 'hard':
+            self.hard_ai()
 
     def start_setup(self, *setup: str):
         if not setup:
@@ -44,9 +77,9 @@ class TicTacToe:
     def evaluate_game(self):
         winners = ((0, 1, 2), (3, 4, 5), (6, 7, 8), (0, 3, 6), (1, 4, 7), (2, 5, 8), (0, 4, 8), (2, 4, 6))
         flat_field = self.field.flatten().tolist()
-        indices = tuple(i for i in range(len(flat_field)) if flat_field[i] == self.player)
+        indices = tuple(i for i in range(len(flat_field)) if flat_field[i] == self.turn)
         if any([i in winners for i in list(combinations(indices, 3))]):
-            print(f'{self.player} wins')
+            print(f'{self.turn} wins')
             quit()
         elif ' ' not in flat_field:
             print('Draw')
@@ -54,8 +87,8 @@ class TicTacToe:
         else:
             pass
 
-    def ask4move(self):
-        self.player = self.current_player()
+    def player_move(self):
+        self.turn = self.current_player()
         while True:
             move = input('Enter the coordinates: ')
             if move == 'exit':
@@ -70,8 +103,7 @@ class TicTacToe:
                 elif self.field[row_pos, col_pos] != ' ':
                     print('This cell is occupied! Choose another one!')
                 else:
-                    self.field[row_pos, col_pos] = self.player
-                    self.print_field()
+                    self.field[row_pos, col_pos] = self.turn
                     break
             except ValueError:
                 print('You should enter numbers!')
@@ -81,9 +113,12 @@ if __name__ == '__main__':
     a = TicTacToe()
     a.start_setup(list('_________'))
     # a.start_setup()
+    a.menu()
     a.print_field()
     while True:
-        a.ask4move()
+        a.play(a.player_1)
+        a.print_field()
         a.evaluate_game()
-        a.easy_ai()
+        a.play(a.player_2)
+        a.print_field()
         a.evaluate_game()
