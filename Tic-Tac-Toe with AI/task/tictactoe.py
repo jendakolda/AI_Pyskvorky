@@ -84,7 +84,7 @@ class TicTacToe:
             print('Error in medium player')
 
     def hard_ai(self):
-        pass
+        self.medium_ai()
 
     def player_move(self):
         while True:
