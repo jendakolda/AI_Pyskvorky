@@ -1,5 +1,5 @@
 import json
-from time import sleep
+from time import sleep, time
 
 import requests
 
@@ -59,8 +59,8 @@ a = API_Connect()
 a.connect()
 a.check_status()
 while True:
-    x = int(input('x'))
-    y = int(input('y'))
+    x = int(input('input x: '))
+    y = int(input('input y: '))
     status = a.play(x, y)
     if status == 201:
         print('Coordinates were saved')
@@ -75,9 +75,12 @@ while True:
         print('its the second player\'s turn')
         sleep(20)
     elif status == 410:
+        start_time = time()
         while status == 410:
             print('waiting for a player to join')
             sleep(20)
             status = a.play(x, y)
+            if time()-start_time >= 120:
+                print('time\'s up')
 
 # start_game()
