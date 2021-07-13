@@ -64,8 +64,8 @@ class TicTacToe:
 
     def medium_ai(self):
         my_indices = self.get_positions_indices()
-        empty_indices = self.get_positions_indices(' ')
-        enemy_indices = tuple(i for i in range(9) if i not in my_indices + empty_indices)
+        # empty_indices = self.get_positions_indices(' ')
+        enemy_indices = self.get_positions_indices(self.opposing_player())
         offensive, defensive = False, False
         if len(my_indices) >= 2:
             offensive = self.get_list_of_moves(my_indices)
@@ -84,7 +84,8 @@ class TicTacToe:
             print('Error in medium player')
 
     def hard_ai(self):
-        self.medium_ai()
+        m, px, py = self.max_alpha_beta(-2, 2)
+        self.field[px, py] = self.current_player()
 
     def player_move(self):
         while True:
@@ -92,7 +93,8 @@ class TicTacToe:
             if move == 'exit':
                 quit()
             try:
-                row_pos, col_pos = map(int, move.split(' '))
+                move = move.replace('  ', ' ')
+                row_pos, col_pos = map(int, move.strip().split(' '))
                 row_pos -= 1
                 col_pos -= 1
 
@@ -109,6 +111,9 @@ class TicTacToe:
     def current_player(self):
         return 'X' if (self.field == 'O').sum() >= (self.field == 'X').sum() else 'O'
 
+    def opposing_player(self):
+        return 'O' if self.current_player() == 'X' else 'X'
+
     def print_field(self):
         print(9 * '-')
         for i in range(self.rows):
@@ -116,16 +121,25 @@ class TicTacToe:
         print(9 * '-')
 
     def evaluate_game(self):
-        flat_field = self.field.flatten().tolist()
-        occupied_indices = self.get_positions_indices()
-        if any([i in TicTacToe.winners for i in list(combinations(occupied_indices, 3))]):
-            print(f'{self.turn} wins')
-            quit()
-        elif ' ' not in flat_field:
+        result = self.is_end()
+        if result == ' ':
             print('Draw')
             quit()
-        else:
+        elif result is None:
             pass
+        else:
+            print(result + ' wins')
+            quit()
+
+    def is_end(self):
+        flat_field = self.field.flatten().tolist()
+        if ' ' not in flat_field:
+            return ' '
+        for sign in 'XO':
+            occupied_indices = self.get_positions_indices(sign)
+            if any([i in TicTacToe.winners for i in list(combinations(occupied_indices, 3))]):
+                return sign
+        return None
 
     def get_positions_indices(self, sign=None):
         if not sign:
@@ -149,6 +163,97 @@ class TicTacToe:
             if tuple(in_winners) in TicTacToe.winners:
                 lst.append(_empty)
         return tuple(lst)
+
+    # From here
+    def max_alpha_beta(self, alpha, beta):
+
+        # Possible values for maxv are:
+        # -1 - loss
+        # 0  - a tie
+        # 1  - win
+
+        # We're initially setting it to -2 as worse than the worst case:
+        maxv = -2
+
+        px = None
+        py = None
+
+        result = self.is_end()
+
+        # If the game came to an end, the function needs to return
+        # the evaluation function of the end. That can be:
+        # -1 - loss
+        # 0  - a tie
+        # 1  - win
+        if result == self.opposing_player():
+            return -1, 0, 0
+        elif result == self.current_player():
+            return 1, 0, 0
+        elif result == ' ':
+            return 0, 0, 0
+
+        for row_pos in range(self.rows):
+            for col_pos in range(self.columns):
+                if self.field[row_pos, col_pos] == ' ':
+                    # On the empty field player 'O' makes a move and calls Min
+                    # That's one branch of the game tree.
+                    self.field[row_pos, col_pos] = self.current_player()
+                    m, min_row_pos, min_col_pos = self.min_alpha_beta(alpha, beta)
+                    # Fixing the maxv value if needed
+                    if m > maxv:
+                        maxv = m
+                        px = row_pos
+                        py = col_pos
+                    # Setting back the field to empty
+                    self.field[row_pos, col_pos] = ' '
+                    # Next two ifs in Max and Min are the only difference between regular algorithm and minimax
+                    if maxv >= beta:
+                        return maxv, px, py
+
+                    if maxv > alpha:
+                        alpha = maxv
+        return maxv, px, py
+
+    def min_alpha_beta(self, alpha, beta):
+
+        # Possible values for minv are:
+        # -1 - win
+        # 0  - a tie
+        # 1  - loss
+
+        # We're initially setting it to -2 as worse than the worst case:
+        minv = 2
+
+        qx = None
+        qy = None
+
+        result = self.is_end()
+
+        if result == self.current_player():
+            return -1, 0, 0
+        elif result == self.opposing_player():
+            return 1, 0, 0
+        elif result == ' ':
+            return 0, 0, 0
+
+        for row_pos in range(self.rows):
+            for col_pos in range(self.columns):
+                if self.field[row_pos, col_pos] == ' ':
+                    self.field[row_pos, col_pos] = self.current_player()
+                    m, max_row_pos, max_col_pos = self.max_alpha_beta(alpha, beta)
+
+                    if m < minv:
+                        minv = m
+                        qx = row_pos
+                        qy = col_pos
+                    # Setting back the field to empty
+                    self.field[row_pos, col_pos] = ' '
+                    if minv <= alpha:
+                        return minv, qx, qy
+
+                    if minv < beta:
+                        beta = minv
+        return minv, qx, qy
 
 
 if __name__ == '__main__':
